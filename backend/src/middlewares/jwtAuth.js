@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 export function verifyToken(req, res, next) {
-    // 1. Extract token from HttpOnly cookie, or fall back to Bearer header
-    let token = req.cookies?.token;
+    let token = req.cookies?.refreshToken;
 
     // 2. Reject if no token is found
     if (!token) {
@@ -13,7 +12,6 @@ export function verifyToken(req, res, next) {
         if (err) {
             return res.status(403).json({ message: 'Invalid or expired token.' });
         }
-
         // 4. Attach payload to req.user for downstream middleware/controllers
         req.user = decoded;
         next();

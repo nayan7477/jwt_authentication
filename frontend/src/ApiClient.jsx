@@ -21,16 +21,19 @@ apiClient.interceptors.response.use(
     (response) => {
         return response;
     },
-    (error) => {
-        if (error.response?.status === 401) {
-            console.log('Authentication required');
+    async (error) => {
+        if (error.response?.status === 401 && !error.config._retry) {
+            error.config._retry = true;
+            try {
+                await apiClient.post('/refresh');
+                return apiClient(error.config);
+            } catch (error) {
+                window.location.href = '/loginform';
+                return Promise.reject(error);
+            }
         }
         return Promise.reject(error);
     },
 );
 
 export default apiClient;
-
-
-
-

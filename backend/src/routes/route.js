@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { userController } from '../controllers/userController.js';
 import { articleController } from '../controllers/articleController.js';
 import { login } from '../controllers/authController.js';
+import { refreshAccessToken } from '../controllers/authController.js';
 import { verifyToken } from '../middlewares/jwtAuth.js';
 
 export const router = Router();
@@ -9,6 +10,7 @@ export const router = Router();
 
 router.route('/signup').post(userController.createUsers);
 router.route('/login').post(login);
+router.post('/refresh', refreshAccessToken);
 router.post('/log-out', userController.logout);
 
 /* --------------------USER ROUTES ---------------------------- */
