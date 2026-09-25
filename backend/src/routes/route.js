@@ -10,7 +10,7 @@ export const router = Router();
 
 router.route('/signup').post(userController.createUsers);
 router.route('/login').post(login);
-router.post('/refresh', refreshAccessToken);
+router.post('/auth/refresh', refreshAccessToken);
 router.post('/log-out', userController.logout);
 
 /* --------------------USER ROUTES ---------------------------- */

@@ -25,7 +25,7 @@ apiClient.interceptors.response.use(
         if (error.response?.status === 401 && !error.config._retry) {
             error.config._retry = true;
             try {
-                await apiClient.post('/refresh');
+                await apiClient.post('/auth/refresh');
                 return apiClient(error.config);
             } catch (error) {
                 window.location.href = '/loginform';
