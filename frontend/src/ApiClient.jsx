@@ -8,31 +8,33 @@ const apiClient = axios.create({
     withCredentials: true,
 });
 
-apiClient.interceptors.request.use(
-    (config) => {
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    },
-);
+let refreshPromise = null;
 
 apiClient.interceptors.response.use(
-    (response) => {
-        return response;
-    },
+    (response) => response,
+
     async (error) => {
-        if (error.response?.status === 401 && !error.config._retry) {
-            error.config._retry = true;
-            try {
-                await apiClient.post('/auth/refresh');
-                return apiClient(error.config);
-            } catch (error) {
-                window.location.href = '/loginform';
-                return Promise.reject(error);
-            }
+        const originalRequest = error.config;
+
+        if (error.response?.status !== 401 || originalRequest._retry) {
+            return Promise.reject(error);
         }
-        return Promise.reject(error);
+
+        originalRequest._retry = true;
+
+        try {
+            if (!refreshPromise) {
+                refreshPromise = apiClient.post('/auth/refresh').finally(() => {
+                    refreshPromise = null;
+                });
+            }
+
+            await refreshPromise;
+
+            return apiClient(originalRequest);
+        } catch (refreshError) {
+            return Promise.reject(refreshError);
+        }
     },
 );
 

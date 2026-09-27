@@ -42,10 +42,12 @@ export function getUserById(req, res, next) {
 
 // Cleaned up for JWT: Assumes JWT middleware attached decoded user to req.user
 export function getCurrentUser(req, res, next) {
-    if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Not authenticated. Please log in first.' });
+    if (!req.user || !req.user.sub) {
+        return res.status(401).json({
+            message: 'Not authenticated. Please log in first.',
+        });
     }
-    getUser(req, res, next, req.user.id);
+    getUser(req, res, next, req.user.sub);
 }
 
 export async function getAllUsersDetails(req, res, next) {
@@ -57,14 +59,46 @@ export async function getAllUsersDetails(req, res, next) {
     }
 }
 
-export function logout(req, res) {
-    res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-    });
+export async function logout(req, res) {
+    try {
+        const refreshToken = req.cookies?.refreshToken;
 
-    return res.status(200).json({ message: 'Logged out successfully' });
+        if (refreshToken) {
+            try {
+                const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+                if (decoded.familyId) {
+                    await revokeFamily(decoded.familyId);
+                }
+            } catch {
+                // Token may already be expired/invalid.
+                // We still clear the cookies.
+            }
+        }
+
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/auth/refresh',
+        });
+
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+        });
+
+        return res.status(200).json({
+            message: 'Logged out successfully.',
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+
+        return res.status(500).json({
+            message: 'Internal server error',
+        });
+    }
 }
 
 export const userController = {

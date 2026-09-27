@@ -13,8 +13,10 @@ export function LoginForm() {
         setError(null);
         try {
             const response = await apiClient.post('/login', { email, password }); // use of axios instead of fetch API , along with interceptors
-            console.log('Success:', response.data);
-            navigate('/userProfile');
+            console.log(response.data);
+            if (response.status === 200) {
+                navigate('/userProfile');
+            }
         } catch (err) {
             const message = err.response?.data?.message || err.response?.data || err.message;
             console.error(`Error: ${message}`);

@@ -1,62 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import apiClient from './ApiClient.jsx';
 
 export function UserProfile() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch(`http://localhost:3000/users/me`, {
-            method: 'GET',
-            credentials: 'include', // Ensures HTTP-only cookies are sent
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        navigate('/loginForm');
-                        throw new Error('Unauthorized');
-                    }
-                    throw new Error(`HTTP Error: ${response.status}`);
-                }
-
-                return response.json();
-            })
-            .then((data) => {
-                console.log('User data received from backend:', data);
-                setUser(data);
+        const fetchData = async () => {
+            try {
+                const response = await apiClient.get('/users/me'); // use of axios instead of fetch API , along with interceptors
+                setUser(response.data);
                 setLoading(false);
-            })
-            .catch((err) => {
-                if (err.message !== 'Unauthorized') {
-                    setError(err.message);
-                }
+            } catch (err) {
+                const message = err.response?.data?.message || err.response?.data || err.message;
+                console.error(`Error: ${message}`);
                 setLoading(false);
-            });
+                navigate('/loginForm');
+            }
+        };
+        fetchData();
     }, [navigate]);
 
     if (loading) return <p>Loading user...</p>;
-    if (error) return <p>Error: {error}</p>;
 
     async function handleLogout() {
         try {
-            const response = await fetch('http://localhost:3000/log-out', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                navigate('/loginForm');
-            } else {
-                console.error('Logout failed');
-            }
+            await apiClient.post('/log-out');
+            navigate('/loginForm');
         } catch (error) {
             console.error('Error during logout:', error);
         }
